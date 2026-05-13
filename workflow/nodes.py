@@ -78,6 +78,7 @@ def draft_node(state: AgentState):
     hook = state['selected_hook']
     sender_name = state.get('sender_name', 'Your Name')
     sender_role = state.get('sender_role', 'Sales Representative')
+    sender_company = state.get('sender_company', 'Our Company')
     
     prompt = f"""
     Write a cold outreach email and a LinkedIn message to {name} at {company}.
@@ -88,13 +89,14 @@ def draft_node(state: AgentState):
     Sender Info:
     Name: {sender_name}
     Role: {sender_role}
+    Company: {sender_company}
     
-    The email should be:
+    The email and LinkedIn message should be:
     - Short (under 150 words)
     - Specific (not generic)
     - Have a clear call to action
-    - END with 'Best,' followed by {sender_name} and {sender_role}. 
-    - DO NOT use any placeholders like [Your Name], [Contact Info], etc.
+    - END with 'Best,' followed by {sender_name}, {sender_role} at {sender_company}. 
+    - DO NOT use any placeholders like [Your Name], [Contact Info], [Your Company], etc.
     
     Return as a JSON object:
     "email_subject": "...",

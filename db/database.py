@@ -58,8 +58,9 @@ def init_db():
     # Initialize default settings if not exist
     default_settings = [
         ('product_description', "Our AI-powered financial operations platform that helps growing startups automate their back-office."),
-        ('sender_name', 'Raja'),
-        ('sender_role', 'Sales Lead')
+        ('sender_name', 'Rajeev'),
+        ('sender_role', 'Founder'),
+        ('sender_company', 'SignalForge')
     ]
     for k, v in default_settings:
         c.execute('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', (k, v))

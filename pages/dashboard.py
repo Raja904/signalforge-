@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 from db.database import get_history
+import urllib.parse
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="SignalForge Dashboard", layout="wide")
 
@@ -42,5 +44,33 @@ else:
         st.markdown(f"**Subject:** {row['email_subject']}")
         st.text_area("Email Body", value=row['email_body'], height=400, disabled=True)
         
+        # Gmail Draft Link
+        subject_encoded = urllib.parse.quote(row['email_subject'])
+        body_encoded = urllib.parse.quote(row['email_body'])
+        gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&tf=1&su={subject_encoded}&body={body_encoded}"
+        st.link_button("📧 Draft in Gmail", gmail_url)
+        
         st.markdown("### LinkedIn Message")
         st.text_area("LinkedIn Draft", value=row['linkedin_draft'], height=200, disabled=True)
+        
+        # Copy to Clipboard and Open LinkedIn hack
+        li_encoded = row['linkedin_draft'].replace("'", "\\'").replace("\n", "\\n")
+        copy_open_html = f"""
+            <button style="
+                width: 100%;
+                background-color: #0e1117;
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                padding: 0.5rem;
+                border-radius: 0.5rem;
+                cursor: pointer;
+                font-family: inherit;
+                font-size: 1rem;
+                margin-top: 10px;
+            " onclick="navigator.clipboard.writeText('{li_encoded}').then(() => {{
+                window.open('https://www.linkedin.com/messaging/', '_blank');
+            }})">
+                💬 Copy & Open LinkedIn
+            </button>
+        """
+        components.html(copy_open_html, height=70)
