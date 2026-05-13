@@ -40,7 +40,7 @@ else:
             
         st.markdown("### Final Email Draft")
         st.markdown(f"**Subject:** {row['email_subject']}")
-        st.text_area("Email Body", value=row['email_body'], height=200, disabled=True)
+        st.text_area("Email Body", value=row['email_body'], height=400, disabled=True)
         
         st.markdown("### LinkedIn Message")
-        st.text_area("LinkedIn Draft", value=row['linkedin_draft'], height=100, disabled=True)
+        st.text_area("LinkedIn Draft", value=row['linkedin_draft'], height=200, disabled=True)

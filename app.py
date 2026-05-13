@@ -1,7 +1,7 @@
 import streamlit as st
 import time
 from workflow.graph import create_graph
-from db.database import save_run, save_signals, save_draft, update_run_status
+from db.database import save_run, save_signals, save_draft, update_run_status, get_settings, update_settings
 import os
 from dotenv import load_dotenv
 
@@ -13,27 +13,53 @@ st.title("🚀 SignalForge AI")
 st.markdown("### AI-Powered B2B Outreach")
 st.markdown("Generate high-converting outreach drafts based on real-time web research.")
 
+# Load persistent settings
+if 'saved_settings' not in st.session_state:
+    st.session_state.saved_settings = get_settings()
+
 # Sidebar for Product Configuration
 with st.sidebar:
     st.header("SignalForge Settings")
     # Try to load logo
-    logo_path = os.path.join(os.getcwd(), "logo.png")
+    logo_path = os.path.join(os.getcwd(), "logo_white.png")
     if os.path.exists(logo_path):
-        st.image(logo_path, use_column_width=True)
+        st.image(logo_path, use_container_width=True)
     
     product_desc = st.text_area(
         "What are you selling?",
-        value="Our AI-powered financial operations platform that helps growing startups automate their back-office.",
-        help="Describe your product. SignalForge will use this to frame the pitch."
+        value=st.session_state.saved_settings.get('product_description', ""),
+        help="Describe your product. SignalForge will use this to frame the pitch.",
+        height=200
     )
     
     col_s1, col_s2 = st.columns(2)
     with col_s1:
-        your_name = st.text_input("Your Name", value="Raja")
+        your_name = st.text_input("Your Name", value=st.session_state.saved_settings.get('sender_name', ""))
     with col_s2:
-        your_role = st.text_input("Your Role", value="Sales Lead")
+        your_role = st.text_input("Your Role", value=st.session_state.saved_settings.get('sender_role', ""))
         
-    st.info("Using Mistral Large & Serper API")
+    if st.button("💾 Save Profile & Product", use_container_width=True):
+        new_settings = {
+            'product_description': product_desc,
+            'sender_name': your_name,
+            'sender_role': your_role
+        }
+        update_settings(new_settings)
+        st.session_state.saved_settings = new_settings
+        st.session_state.settings_updated_at = time.time()
+        st.rerun()
+
+    # Show success message for 5 seconds
+    if 'settings_updated_at' in st.session_state:
+        elapsed = time.time() - st.session_state.settings_updated_at
+        if elapsed < 5:
+            st.success("Profile saved.")
+            # This will trigger a rerun once the time is up
+            time.sleep(0.1) 
+            st.rerun()
+        else:
+            del st.session_state.settings_updated_at
+            st.rerun()
 
 # Main Input Form
 col1, col2 = st.columns([1, 1])
@@ -126,11 +152,11 @@ if submitted:
                 
                 with tabs[0]:
                     st.markdown(f"**Subject:** {final_state['email_subject']}")
-                    edited_body = st.text_area("Body", value=final_state['email_body'], height=300)
+                    edited_body = st.text_area("Body", value=final_state['email_body'], height=450)
                     st.button("Save Edits")
                 
                 with tabs[1]:
-                    st.text_area("LinkedIn Draft", value=final_state['linkedin_draft'], height=150)
+                    st.text_area("LinkedIn Draft", value=final_state['linkedin_draft'], height=250)
                 
                 with tabs[2]:
                     st.markdown(f"**Hook Used:** {final_state['selected_hook']}")

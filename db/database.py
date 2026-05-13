@@ -47,6 +47,23 @@ def init_db():
         )
     ''')
     
+    # Settings table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    ''')
+    
+    # Initialize default settings if not exist
+    default_settings = [
+        ('product_description', "Our AI-powered financial operations platform that helps growing startups automate their back-office."),
+        ('sender_name', 'Raja'),
+        ('sender_role', 'Sales Lead')
+    ]
+    for k, v in default_settings:
+        c.execute('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', (k, v))
+    
     conn.commit()
     conn.close()
 
@@ -103,6 +120,22 @@ def get_history():
     rows = [dict(row) for row in c.fetchall()]
     conn.close()
     return rows
+
+def get_settings():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT key, value FROM settings')
+    settings = {row[0]: row[1] for row in c.fetchall()}
+    conn.close()
+    return settings
+
+def update_settings(settings_dict):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    for k, v in settings_dict.items():
+        c.execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', (k, v))
+    conn.commit()
+    conn.close()
 
 if __name__ == '__main__':
     init_db()
