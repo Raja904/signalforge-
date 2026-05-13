@@ -7,6 +7,8 @@ class AgentState(TypedDict):
     company_name: str
     role: str
     product_description: str
+    sender_name: str
+    sender_role: str
     
     # Internal State
     signals: List[dict]

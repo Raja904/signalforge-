@@ -26,6 +26,13 @@ with st.sidebar:
         value="Our AI-powered financial operations platform that helps growing startups automate their back-office.",
         help="Describe your product. SignalForge will use this to frame the pitch."
     )
+    
+    col_s1, col_s2 = st.columns(2)
+    with col_s1:
+        your_name = st.text_input("Your Name", value="Raja")
+    with col_s2:
+        your_role = st.text_input("Your Role", value="Sales Lead")
+        
     st.info("Using Mistral Large & Serper API")
 
 # Main Input Form
@@ -63,6 +70,8 @@ if submitted:
                 "company_name": company,
                 "role": role,
                 "product_description": product_desc,
+                "sender_name": your_name,
+                "sender_role": your_role,
                 "signals": [],
                 "logs": [],
                 "is_ghost": False,
@@ -79,6 +88,7 @@ if submitted:
                         for log in state_update["logs"]:
                             all_logs.append(log)
                             st.write(log)
+                            time.sleep(0.5) # Dramatic pause for "Real-Time" effect
                     # Merge state
                     for key, value in state_update.items():
                         if key == "logs":
