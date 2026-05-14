@@ -6,18 +6,24 @@ from workflow.state import AgentState
 def research_node(state: AgentState):
     name = state['prospect_name']
     company = state['company_name']
+    role = state['role']
     
-    signals, queries = get_prospect_signals(name, company)
+    signals, queries = get_prospect_signals(name, company, role)
     
-    # Create detailed logs for each query
-    search_logs = [f"🔍 Searching: \"{q}\"" for q in queries]
+    # Strict Filter: signal must mention BOTH name AND company
+    relevant_signals = [
+        s for s in signals 
+        if name.lower() in (s.get('snippet', '') + s.get('title', '')).lower()
+        and company.lower() in (s.get('snippet', '') + s.get('title', '')).lower()
+    ]
     
-    is_ghost = len(signals) == 0
+    is_ghost = len(relevant_signals) == 0
     
     return {
-        "signals": signals,
+        "signals": relevant_signals,
         "is_ghost": is_ghost,
-        "logs": search_logs + [f"📄 Found {len(signals)} potential signals — scoring relevance..."]
+        "logs": [f"🔍 Searching: \"{q}\"" for q in queries] + 
+                [f"📄 Found {len(relevant_signals)} relevant signals (filtered from {len(signals)} total)..."]
     }
 
 def analyze_node(state: AgentState):
@@ -34,25 +40,36 @@ def analyze_node(state: AgentState):
             "logs": ["No signals found. Using fallback hook."]
         }
     
-    # Format signals for the LLM
-    signals_text = "\n".join([f"- {s['title']}: {s['snippet']} (Source: {s['link']})" for s in signals[:10]])
+    # Format signals for the LLM with DATES
+    signals_text = "\n".join([f"- {s['title']} (Date: {s.get('date', 'Unknown')}): {s['snippet']} (Source: {s['link']})" for s in signals[:10]])
+    
+    # Unique LinkedIn profiles pre-check
+    unique_links = set(s.get('link', '') for s in signals if 'linkedin.com/in/' in s.get('link', ''))
+    ambiguity_hint = ""
+    if len(unique_links) > 2:
+        ambiguity_hint = f"\nCRITICAL WARNING: Found {len(unique_links)} different LinkedIn profiles for this name+company combination. This strongly suggests an AMBIGUOUS prospect.\n"
     
     prompt = f"""
     Analyze the following research signals for {name}, who works as {role} at {company}.
     We are selling: {product}
     
+    {ambiguity_hint}
+    
     Signals:
     {signals_text}
     
-    Task:
-    1. Identify the single most relevant "hook" for a cold outreach email.
-    2. Detect if the data is stale (e.g. no news in last 2 years).
-    3. Detect if the company name is ambiguous (signals refer to multiple different companies).
+    IMPORTANT RULES:
+    - If {ambiguity_hint != ""} or multiple different LinkedIn profile URLs exist for the same name+company, you MUST set is_ambiguous=true.
+    - If signals show they LEFT {company} or joined another company, set is_stale=true.
+    - If most relevant signals are older than 2 years AND there is no recent 2024/2025 activity, set is_stale=true.
+    - Company news alone does NOT mean the prospect's data is fresh.
     
-    Return your analysis as a JSON object with the following keys:
-    "selected_hook": "the hook text",
-    "reasoning": "why this is the best hook",
+    Return your analysis as a JSON object:
+    "selected_hook": "...",
+    "reasoning": "...",
     "is_stale": true/false,
+    "stale_reason": "...",
+    "is_ghost": true/false,
     "is_ambiguous": true/false
     """
     
@@ -60,12 +77,14 @@ def analyze_node(state: AgentState):
     try:
         res = json.loads(res_text)
     except:
-        res = {"selected_hook": "Recent company activity", "reasoning": "Error parsing LLM response", "is_stale": False, "is_ambiguous": False}
+        res = {"selected_hook": "Recent activity", "reasoning": "Error parsing", "is_stale": False, "is_ghost": False, "is_ambiguous": False}
         
     return {
         "selected_hook": res.get("selected_hook"),
         "hook_reasoning": res.get("reasoning"),
         "is_stale": res.get("is_stale", False),
+        "stale_reason": res.get("stale_reason"),
+        "is_ghost": state['is_ghost'] or res.get("is_ghost", False),
         "is_ambiguous": res.get("is_ambiguous", False),
         "logs": [f"🎯 Hook selected: \"{res.get('selected_hook')[:50]}...\" (confidence: high)"]
     }

@@ -23,12 +23,13 @@ def search_serper(query):
     else:
         print(f"Error calling Serper: {response.status_code}")
         return None
-
-def get_prospect_signals(name, company):
+    
+def get_prospect_signals(name, company, role):
     queries = [
-        f"{name} {company} linkedin activity",
-        f"{company} recent news funding product launch",
-        f"{name} {company} interview podcast"
+        f'"{name}" "{role}" "{company}" linkedin',
+        f'"{company}" funding OR "Series A" OR "Series B" 2025 OR 2026',
+        f'"{name}" interview OR podcast OR keynote 2025 OR 2026',
+        f'"{company}" product launch OR announcement 2025 OR 2026'
     ]
     
     all_results = []
