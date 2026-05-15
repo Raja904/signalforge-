@@ -1,10 +1,17 @@
 import requests
 import os
+import streamlit as st
 from dotenv import load_dotenv
 
 load_dotenv()
 
-SERPER_API_KEY = os.getenv("SERPER_API_KEY")
+def _get_api_key():
+    try:
+        return st.secrets["SERPER_API_KEY"]
+    except Exception:
+        return os.getenv("SERPER_API_KEY")
+
+SERPER_API_KEY = _get_api_key()
 
 def search_serper(query):
     url = "https://google.serper.dev/search"
