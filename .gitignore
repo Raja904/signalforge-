@@ -8,3 +8,7 @@ db/*.db
 pdf_content.txt
 test_workflow.py
 generate_logo_background.py
+
+logo.png
+logo_white.png
+logo_transparent_original.png
