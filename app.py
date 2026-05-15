@@ -95,9 +95,12 @@ if submitted:
     if not name or not company:
         st.error("Please provide at least Name and Company.")
     else:
+        # Clear previous results
+        st.session_state.pop('result', None)
+
         run_id = save_run(name, company, role, product_desc)
         app = create_graph()
-        
+
         initial_state = {
             "prospect_name": name,
             "company_name": company,
@@ -113,65 +116,69 @@ if submitted:
             "stale_reason": None,
             "is_ambiguous": False
         }
-        
-        node_info = {
-            "research": {"label": "🔬 Research Node"},
-            "analyze": {"label": "🧠 Analysis Node"},
-            "draft": {"label": "✍️ Draft Node"}
-        }
-        
+
         with col2:
             with st.spinner("🤖 Agent is working... Research → Analysis → Draft (~15 sec)"):
                 final_state = app.invoke(initial_state)
-            st.success("✅ All nodes complete!")
 
-        # Save Results to DB
-        save_signals(run_id, final_state['signals'])
-        save_draft(run_id, final_state['selected_hook'], final_state['email_subject'], 
-                   final_state['email_body'], final_state['linkedin_draft'], final_state['quality_score'])
+        # Save to DB
+        save_signals(run_id, final_state.get('signals', []))
+        save_draft(run_id, final_state.get('selected_hook'), final_state.get('email_subject'),
+                   final_state.get('email_body'), final_state.get('linkedin_draft'), final_state.get('quality_score'))
         update_run_status(run_id, "Completed")
-        
-        with col2:
-            st.success("Draft Generated!")
-            if final_state['is_ghost']:
-                st.warning("👻 Ghost Prospect: No recent news found. Using role-based hook.")
-            if final_state['is_stale']:
-                reason = final_state.get('stale_reason') or "News is quite old."
-                st.warning(f"⚠️ Prospect may have left {company}. {reason}")
-            if final_state['is_ambiguous']:
-                st.warning("⚠️ Multiple people found with this name. Please verify the correct prospect before sending.")
-            
-            tabs = st.tabs(["📧 Email Draft", "💬 LinkedIn Message", "🔍 Research Signal"])
-            
-            with tabs[0]:
-                subject = final_state.get('email_subject') or ""
-                body = final_state.get('email_body') or ""
-                st.markdown(f"**Subject:** {subject}")
-                edited_body = st.text_area("Body", value=body, height=450)
-                sub_enc = urllib.parse.quote(str(subject))
-                body_enc = urllib.parse.quote(str(edited_body))
-                gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&tf=1&su={sub_enc}&body={body_enc}"
-                st.link_button("📧 Draft in Gmail", gmail_url, use_container_width=True)
-            
-            with tabs[1]:
-                linkedin = final_state.get('linkedin_draft') or ""
-                edited_li = st.text_area("LinkedIn Draft", value=linkedin, height=250)
-                li_enc = (edited_li or "").replace("'", "\\'").replace("\n", "\\n")
-                copy_open_html = f"""
-                    <button style="width: 100%; background-color: #0e1117; color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 0.5rem; border-radius: 0.5rem; cursor: pointer; font-family: inherit; font-size: 1rem; margin-top: 10px;" 
-                    onclick="navigator.clipboard.writeText('{li_enc}').then(() => {{ window.open('https://www.linkedin.com/messaging/', '_blank'); }})">
-                        💬 Copy & Open LinkedIn
-                    </button>
-                """
-                components.html(copy_open_html, height=70)
-            
-            with tabs[2]:
-                st.markdown(f"**Hook Used:** {final_state['selected_hook']}")
-                st.markdown(f"**Reasoning:** {final_state['hook_reasoning']}")
-                st.markdown("---")
-                for s in final_state['signals'][:5]:
-                    st.markdown(f"- [{s['title']}]({s['link']})\n  *{s['snippet']}*")
 
-        with st.expander("View Agent Execution Logs"):
-            for log in final_state['logs']:
-                st.text(f"➜ {log}")
+        # Store in session state so results persist after rerun
+        st.session_state.result = final_state
+        st.session_state.result_company = company
+
+# Display results from session state (survives Streamlit reruns)
+if 'result' in st.session_state:
+    final_state = st.session_state.result
+    company = st.session_state.get('result_company', '')
+
+    with col2:
+        st.success("✅ Draft Generated!")
+        if final_state.get('is_ghost'):
+            st.warning("👻 Ghost Prospect: No recent news found. Using role-based hook.")
+        if final_state.get('is_stale'):
+            reason = final_state.get('stale_reason') or "News is quite old."
+            st.warning(f"⚠️ Prospect may have left {company}. {reason}")
+        if final_state.get('is_ambiguous'):
+            st.warning("⚠️ Multiple people found with this name. Please verify before sending.")
+
+        tabs = st.tabs(["📧 Email Draft", "💬 LinkedIn Message", "🔍 Research Signal"])
+
+        with tabs[0]:
+            subject = final_state.get('email_subject') or ""
+            body = final_state.get('email_body') or ""
+            st.markdown(f"**Subject:** {subject}")
+            edited_body = st.text_area("Body", value=body, height=450)
+            sub_enc = urllib.parse.quote(str(subject))
+            body_enc = urllib.parse.quote(str(edited_body))
+            gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&tf=1&su={sub_enc}&body={body_enc}"
+            st.link_button("📧 Draft in Gmail", gmail_url, use_container_width=True)
+
+        with tabs[1]:
+            linkedin = final_state.get('linkedin_draft') or ""
+            edited_li = st.text_area("LinkedIn Draft", value=linkedin, height=250)
+            li_enc = (edited_li or "").replace("'", "\\'").replace("\n", "\\n")
+            copy_open_html = f"""
+                <button style="width: 100%; background-color: #0e1117; color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 0.5rem; border-radius: 0.5rem; cursor: pointer; font-family: inherit; font-size: 1rem; margin-top: 10px;"
+                onclick="navigator.clipboard.writeText('{li_enc}').then(() => {{ window.open('https://www.linkedin.com/messaging/', '_blank'); }})">
+                    💬 Copy & Open LinkedIn
+                </button>
+            """
+            components.html(copy_open_html, height=70)
+
+        with tabs[2]:
+            st.markdown(f"**Hook Used:** {final_state.get('selected_hook', '')}")
+            st.markdown(f"**Reasoning:** {final_state.get('hook_reasoning', '')}")
+            st.markdown("---")
+            for s in final_state.get('signals', [])[:5]:
+                st.markdown(f"- [{s.get('title','')}]({s.get('link','')})\n  *{s.get('snippet','')}*")
+
+    with st.expander("📋 View Agent Execution Logs"):
+        for log in final_state.get('logs', []):
+            st.text(f"➜ {log}")
+
+
