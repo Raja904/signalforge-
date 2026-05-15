@@ -104,6 +104,8 @@ def draft_node(state: AgentState):
     Role: {role}
     Product being sold: {product}
     The Hook to use: {hook}
+    Research Context: {"GHOST (No specific research found)" if state.get('is_ghost') else "RESEARCHED (Specific signals found)"}
+    Staleness: {"STALE (Data might be old)" if state.get('is_stale') else "FRESH"}
     
     Sender Info:
     Name: {sender_name}
@@ -115,13 +117,21 @@ def draft_node(state: AgentState):
     - Specific (not generic)
     - Have a clear call to action
     - END with 'Best,' followed by {sender_name}, {sender_role} at {sender_company}. 
-    - DO NOT use any placeholders like [Your Name], [Contact Info], [Your Company], etc.
+    - DO NOT use any placeholders.
     
-    Return as a JSON object:
+    Return as a JSON object with:
     "email_subject": "...",
     "email_body": "...",
     "linkedin_draft": "...",
-    "quality_score": 1-10 (how personalized it is)
+    "quality_score": 1-10 
+    
+    QUALITY SCORE RUBRIC (Strictly follow this):
+    - 1-3: Generic pitch. Hook is weak or generic (e.g. "saw you are working at [company]").
+    - 4-6: Mentions role/company correctly but lacks a deep personal/recent signal. 
+    - 7-8: Uses a specific research signal (news, post, achievement) effectively.
+    - 9-10: Perfect personalization that makes it look like you spent 30 mins researching.
+    
+    IMPORTANT: If Research Context is GHOST or Staleness is STALE, the MAX score allowed is 5.
     """
     
     res_text = call_mistral(prompt, is_json=True)
