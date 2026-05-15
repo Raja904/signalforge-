@@ -1,14 +1,17 @@
 FROM python:3.11-slim
 
+RUN useradd -m -u 1000 user
+USER user
+ENV PATH="/home/user/.local/bin:$PATH"
+
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --chown=user ./requirements.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
-COPY . .
+COPY --chown=user . /app
 
-# Create DB directory
-RUN mkdir -p db
+RUN mkdir -p /app/db
 
 EXPOSE 7860
 
