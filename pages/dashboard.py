@@ -41,20 +41,21 @@ else:
             st.markdown(f"**Selected Hook:** {row['hook']}")
             
         st.markdown("### Final Email Draft")
-        st.markdown(f"**Subject:** {row['email_subject']}")
-        st.text_area("Email Body", value=row['email_body'], height=400, disabled=True)
+        email_subject = row.get('email_subject') or ""
+        email_body = row.get('email_body') or ""
+        st.markdown(f"**Subject:** {email_subject}")
+        st.text_area("Email Body", value=email_body, height=400, disabled=True)
         
         # Gmail Draft Link
-        subject_encoded = urllib.parse.quote(row['email_subject'])
-        body_encoded = urllib.parse.quote(row['email_body'])
+        subject_encoded = urllib.parse.quote(str(email_subject))
+        body_encoded = urllib.parse.quote(str(email_body))
         gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&tf=1&su={subject_encoded}&body={body_encoded}"
         st.link_button("📧 Draft in Gmail", gmail_url)
         
         st.markdown("### LinkedIn Message")
-        st.text_area("LinkedIn Draft", value=row['linkedin_draft'], height=200, disabled=True)
-        
-        # Copy to Clipboard and Open LinkedIn hack
-        li_encoded = row['linkedin_draft'].replace("'", "\\'").replace("\n", "\\n")
+        linkedin_draft = row.get('linkedin_draft') or ""
+        st.text_area("LinkedIn Draft", value=linkedin_draft, height=200, disabled=True)
+        li_encoded = linkedin_draft.replace("'", "\\'").replace("\n", "\\n")
         copy_open_html = f"""
             <button style="
                 width: 100%;

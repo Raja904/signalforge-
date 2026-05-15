@@ -120,14 +120,10 @@ if submitted:
             "draft": {"label": "✍️ Draft Node"}
         }
         
-        with st.spinner("🤖 Agent is working... this may take ~15 seconds"):
-            final_state = app.invoke(initial_state)
-
-        # Show node completion status after invoke
         with col2:
-            st.status("🔬 Research Node", state="complete").update(label="✅ Research Node — complete", state="complete", expanded=False)
-            st.status("🧠 Analysis Node", state="complete").update(label="✅ Analysis Node — complete", state="complete", expanded=False)
-            st.status("✍️ Draft Node", state="complete").update(label="✅ Draft Node — complete", state="complete", expanded=False)
+            with st.spinner("🤖 Agent is working... Research → Analysis → Draft (~15 sec)"):
+                final_state = app.invoke(initial_state)
+            st.success("✅ All nodes complete!")
 
         # Save Results to DB
         save_signals(run_id, final_state['signals'])
@@ -148,16 +144,19 @@ if submitted:
             tabs = st.tabs(["📧 Email Draft", "💬 LinkedIn Message", "🔍 Research Signal"])
             
             with tabs[0]:
-                st.markdown(f"**Subject:** {final_state['email_subject']}")
-                edited_body = st.text_area("Body", value=final_state['email_body'], height=450)
-                sub_enc = urllib.parse.quote(final_state['email_subject'])
-                body_enc = urllib.parse.quote(edited_body)
+                subject = final_state.get('email_subject') or ""
+                body = final_state.get('email_body') or ""
+                st.markdown(f"**Subject:** {subject}")
+                edited_body = st.text_area("Body", value=body, height=450)
+                sub_enc = urllib.parse.quote(str(subject))
+                body_enc = urllib.parse.quote(str(edited_body))
                 gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&tf=1&su={sub_enc}&body={body_enc}"
                 st.link_button("📧 Draft in Gmail", gmail_url, use_container_width=True)
             
             with tabs[1]:
-                edited_li = st.text_area("LinkedIn Draft", value=final_state['linkedin_draft'], height=250)
-                li_enc = edited_li.replace("'", "\\'").replace("\n", "\\n")
+                linkedin = final_state.get('linkedin_draft') or ""
+                edited_li = st.text_area("LinkedIn Draft", value=linkedin, height=250)
+                li_enc = (edited_li or "").replace("'", "\\'").replace("\n", "\\n")
                 copy_open_html = f"""
                     <button style="width: 100%; background-color: #0e1117; color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 0.5rem; border-radius: 0.5rem; cursor: pointer; font-family: inherit; font-size: 1rem; margin-top: 10px;" 
                     onclick="navigator.clipboard.writeText('{li_enc}').then(() => {{ window.open('https://www.linkedin.com/messaging/', '_blank'); }})">
