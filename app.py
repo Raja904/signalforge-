@@ -1,7 +1,7 @@
 import streamlit as st
 import time
 from workflow.graph import create_graph
-from db.database import save_run, save_signals, save_draft, update_run_status, get_settings, update_settings
+from db.database import save_run, save_signals, save_draft, update_run_status, get_settings, update_settings, init_db
 import os
 from dotenv import load_dotenv
 import urllib.parse
@@ -23,6 +23,9 @@ st.markdown("""
 st.title("🚀 SignalForge AI")
 st.markdown("### AI-Powered B2B Outreach")
 st.markdown("Generate high-converting outreach drafts based on real-time web research.")
+
+# Initialize DB — ensures all tables exist on fresh cloud deploys
+init_db()
 
 # Load persistent settings
 if 'saved_settings' not in st.session_state:
