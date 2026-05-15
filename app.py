@@ -120,31 +120,14 @@ if submitted:
             "draft": {"label": "✍️ Draft Node"}
         }
         
-        final_state = initial_state
-        for output in app.stream(initial_state):
-            for node_name, state_update in output.items():
-                info = node_info.get(node_name, {"label": f"⚙️ {node_name.title()} Node"})
-                
-                with st.status(info["label"], expanded=True) as status:
-                    if "logs" in state_update:
-                        for log in state_update["logs"]:
-                            st.write(log)
-                            time.sleep(0.6)
-                    
-                    if node_name == "analyze" and "selected_hook" in state_update:
-                        st.write(f"🎯 Hook selected: \"{state_update['selected_hook'][:60]}...\"")
-                    
-                    if node_name == "draft" and "quality_score" in state_update:
-                        st.write(f"📊 Quality score: {state_update['quality_score']}/10")
-                        
-                    status.update(label=f"✅ {info['label']} — complete", state="complete", expanded=False)
-                
-                # Merge state
-                for key, value in state_update.items():
-                    if key == "logs":
-                        final_state["logs"].extend(value)
-                    else:
-                        final_state[key] = value
+        with st.spinner("🤖 Agent is working... this may take ~15 seconds"):
+            final_state = app.invoke(initial_state)
+
+        # Show node completion status after invoke
+        with col2:
+            st.status("🔬 Research Node", state="complete").update(label="✅ Research Node — complete", state="complete", expanded=False)
+            st.status("🧠 Analysis Node", state="complete").update(label="✅ Analysis Node — complete", state="complete", expanded=False)
+            st.status("✍️ Draft Node", state="complete").update(label="✅ Draft Node — complete", state="complete", expanded=False)
 
         # Save Results to DB
         save_signals(run_id, final_state['signals'])
