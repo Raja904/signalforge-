@@ -115,7 +115,6 @@ def draft_node(state: AgentState):
     The email and LinkedIn message should be:
     - Short (under 150 words)
     - Specific (not generic)
-    - Have a clear call to action
     - END with 'Best,' followed by {sender_name}, {sender_role} at {sender_company}. 
     - DO NOT use any placeholders.
     
@@ -123,15 +122,7 @@ def draft_node(state: AgentState):
     "email_subject": "...",
     "email_body": "...",
     "linkedin_draft": "...",
-    "quality_score": 1-10 
-    
-    QUALITY SCORE RUBRIC (Strictly follow this):
-    - 1-3: Generic pitch. Hook is weak or generic (e.g. "saw you are working at [company]").
-    - 4-6: Mentions role/company correctly but lacks a deep personal/recent signal. 
-    - 7-8: Uses a specific research signal (news, post, achievement) effectively.
-    - 9-10: Perfect personalization that makes it look like you spent 30 mins researching.
-    
-    IMPORTANT: If Research Context is GHOST or Staleness is STALE, the MAX score allowed is 5.
+    "quality_score": 1-10 (Score: 1-3=Generic; 4-6=Role/Company only; 7-10=Personalized via signals. MAX 5 if GHOST/STALE).
     """
     
     res_text = call_mistral(prompt, is_json=True)
